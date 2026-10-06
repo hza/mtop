@@ -35,7 +35,7 @@ static uint64_t mem_total, mem_used;
 static double cpu_total;
 static double load[3];
 static int sort_mem;
-static const int intervals[] = {250, 500, 1000, 2000, 3000, 5000, 10000};  // ms
+static const int intervals[] = {250, 500, 1000, 2000, 3000, 5000, 10000, 30000, 60000};  // ms
 static int ival = 2;
 #define NIVAL (int)(sizeof intervals / sizeof *intervals)
 static char flt[64];
@@ -164,12 +164,12 @@ static void cwd_of(pid_t pid, char *out, size_t outsz) {
         snprintf(out, outsz, "(unavailable)");
 }
 
-// Prints label + value word-wrapped under a 5-col indent; returns rows used.
+// Prints label + value word-wrapped under a 7-col indent; returns rows used.
 static int field(int y, const char *label, const char *val) {
-    int w = COLS > 6 ? COLS - 5 : 1, rows = 0;
+    int w = COLS > 8 ? COLS - 7 : 1, rows = 0;
     if (y >= LINES - 3) return 1;
     attron(A_BOLD);
-    mvprintw(y, 0, "%-5s", label);
+    mvprintw(y, 2, "%-5s", label);
     attroff(A_BOLD);
     do {
         int len = strlen(val);
@@ -179,7 +179,7 @@ static int field(int y, const char *label, const char *val) {
             for (int i = w; i > w / 2; i--)
                 if (val[i] == ' ') { take = i; break; }
         }
-        if (y + rows < LINES - 3) mvprintw(y + rows, 5, "%.*s", take, val);
+        if (y + rows < LINES - 3) mvprintw(y + rows, 7, "%.*s", take, val);
         val += take;
         while (*val == ' ') val++;
         rows++;
@@ -228,7 +228,7 @@ int main(void) {
         sel_pid = n ? view[sel].pid : -1;
 
         erase();
-        mvprintw(0, 0, "CPU %.0f%% | MEM %.1fG/%.0fG | LOAD %.1f %.1f %.1f | REFRESH %gs", cpu_total,
+        mvprintw(0, 0, "🔥 CPU %.0f%% | 🧠 MEM %.1fG/%.0fG | 📈 LOAD %.1f %.1f %.1f | ⏱️  REFRESH %gs", cpu_total,
                  mem_used / 1073741824.0, mem_total / 1073741824.0, load[0], load[1],
                  load[2], intervals[ival] / 1000.0);
         attron(A_BOLD);
@@ -258,7 +258,7 @@ int main(void) {
         if (editing || flt[0])
             mvprintw(LINES - 3, 0, "filter: %s%s", flt, editing ? "_" : "");
         mvprintw(LINES - 2, 0, "%.*s", COLS, status);
-        mvprintw(LINES - 1, 0, "[←/→] refresh  [k] kill  [s] sort cpu  [m] sort mem  [/] filter  [q] quit");
+        mvprintw(LINES - 1, 0, "[←/→] refresh time  [k] kill  [s] sort cpu  [m] sort mem  [/] filter  [q] quit");
         refresh();
 
         int ch = getch();
