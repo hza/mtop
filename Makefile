@@ -1,16 +1,16 @@
 PREFIX ?= /usr/local
 
-ktop: ktop.c
-	cc -O2 -Wall -Wextra -o ktop ktop.c -lncurses
+mtop: mtop.c
+	cc -O2 -Wall -Wextra -o mtop mtop.c -lncurses
 
-install: ktop
+install: mtop
 	install -d $(PREFIX)/bin
-	install -m 755 ktop $(PREFIX)/bin/ktop
+	install -m 755 mtop $(PREFIX)/bin/mtop
 
 uninstall:
-	rm -f $(PREFIX)/bin/ktop
+	rm -f $(PREFIX)/bin/mtop
 
 clean:
-	rm -f ktop
+	rm -f mtop
 
 .PHONY: install uninstall clean

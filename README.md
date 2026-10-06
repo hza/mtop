@@ -1,6 +1,6 @@
-# ktop
+# mtop
 
-A tiny `top` for macOS that does one thing well: find a CPU or memory hog and kill it.
+A tiny `top` for macOS (Mac top) that does one thing well: find a CPU or memory hog and kill it.
 
 Single C file, uses only system ncurses and native macOS APIs (`libproc`, `sysctl`, Mach host stats) — no dependencies, no shelling out to `ps`.
 
@@ -32,7 +32,7 @@ Single C file, uses only system ncurses and native macOS APIs (`libproc`, `sysct
 ## Build & install
 
 ```sh
-make              # build ./ktop
+make              # build ./mtop
 make install      # copy to /usr/local/bin (override with PREFIX=...)
 make uninstall
 ```

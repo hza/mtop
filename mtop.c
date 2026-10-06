@@ -1,4 +1,4 @@
-// ktop - minimal top: top 16 processes, arrows move, k/Backspace kills.
+// mtop - minimal top: top 16 processes, arrows move, k/Backspace kills.
 #include <ctype.h>
 #include <errno.h>
 #include <libproc.h>
