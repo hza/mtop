@@ -7,11 +7,11 @@ Single C file, uses only system ncurses and native macOS APIs (`libproc`, `sysct
 ```
 🔥 CPU 27% | 🧠 MEM 13.2G/32G | 📈 LOAD 2.1 1.9 1.7 | ⏱️  REFRESH 1s
 
-  PID       CPU%   MEM%  NAME
+  PID       CPU%       MEM  NAME
 ──────────────────────────────────────────────────────────────
-▶ 82509      6.5    2.1  dbeaver
-  456        6.2    1.3  WindowManager
-  521        6.1    0.9  Terminal
+▶ 82509      6.5   682.3M  dbeaver
+  456        6.2   421.0M  WindowManager
+  521        6.1   290.4M  Terminal
   ...
 ──────────────────────────────────────────────────────────────
   CMD  /Applications/DBeaver.app/Contents/MacOS/dbeaver

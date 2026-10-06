@@ -189,6 +189,13 @@ static int field(int y, const char *label, const char *val) {
     return rows;
 }
 
+static const char *human(uint64_t b, char *out, size_t sz) {
+    if (b >= 1ULL << 30) snprintf(out, sz, "%.1fG", b / 1073741824.0);
+    else if (b >= 1ULL << 20) snprintf(out, sz, "%.1fM", b / 1048576.0);
+    else snprintf(out, sz, "%lluK", (unsigned long long)(b >> 10));
+    return out;
+}
+
 static void hline_at(int y) {
     move(y, 0);
     for (int i = 0; i < COLS; i++) addstr("─");
@@ -236,14 +243,15 @@ int main(void) {
                  mem_used / 1073741824.0, mem_total / 1073741824.0, load[0], load[1],
                  load[2], intervals[ival] / 1000.0, paused ? " ⏸️  PAUSED" : "");
         attron(A_BOLD);
-        mvprintw(2, 0, "  %-7s %6s %6s  %s", "PID", "CPU%", "MEM%", "NAME");
+        mvprintw(2, 0, "  %-7s %6s %8s  %s", "PID", "CPU%", "MEM", "NAME");
         attroff(A_BOLD);
         hline_at(3);
-        int nw = COLS > 26 ? COLS - 26 : 0;
+        char mem[16];
+        int nw = COLS > 28 ? COLS - 28 : 0;
         for (int i = 0; i < n; i++) {
             if (i == sel) attron(A_REVERSE);
-            mvprintw(4 + i, 0, "%s %-7d %6.1f %6.1f  %-*.*s", i == sel ? "▶" : " ",
-                     view[i].pid, view[i].pct, view[i].rss * 100.0 / mem_total, nw, nw,
+            mvprintw(4 + i, 0, "%s %-7d %6.1f %8s  %-*.*s", i == sel ? "▶" : " ",
+                     view[i].pid, view[i].pct, human(view[i].rss, mem, sizeof mem), nw, nw,
                      view[i].name);
             if (i == sel) attroff(A_REVERSE);
         }
