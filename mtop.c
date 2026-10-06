@@ -1,4 +1,4 @@
-// mtop - minimal top: top 16 processes, arrows move, k/Backspace kills.
+// mtop - minimal top: top 16 processes, arrows move, k kills, space pauses.
 #include <ctype.h>
 #include <errno.h>
 #include <libproc.h>
@@ -37,6 +37,7 @@ static double load[3];
 static int sort_mem;
 static const int intervals[] = {250, 500, 1000, 2000, 3000, 5000, 10000, 30000, 60000};  // ms
 static int ival = 2;
+static int paused;
 #define NIVAL (int)(sizeof intervals / sizeof *intervals)
 static char flt[64];
 
@@ -210,7 +211,7 @@ int main(void) {
     uint64_t last = 0;
 
     for (;;) {
-        if (now_ns() - last >= intervals[ival] * 1000000ULL) {
+        if (!last || (!paused && now_ns() - last >= intervals[ival] * 1000000ULL)) {
             sample();
             last = now_ns();
         }
@@ -228,9 +229,9 @@ int main(void) {
         sel_pid = n ? view[sel].pid : -1;
 
         erase();
-        mvprintw(0, 0, "🔥 CPU %.0f%% | 🧠 MEM %.1fG/%.0fG | 📈 LOAD %.1f %.1f %.1f | ⏱️  REFRESH %gs", cpu_total,
+        mvprintw(0, 0, "🔥 CPU %.0f%% | 🧠 MEM %.1fG/%.0fG | 📈 LOAD %.1f %.1f %.1f | ⏱️  REFRESH %gs%s", cpu_total,
                  mem_used / 1073741824.0, mem_total / 1073741824.0, load[0], load[1],
-                 load[2], intervals[ival] / 1000.0);
+                 load[2], intervals[ival] / 1000.0, paused ? " ⏸️  PAUSED" : "");
         attron(A_BOLD);
         mvprintw(2, 0, "  %-7s %6s %6s  %s", "PID", "CPU%", "MEM%", "NAME");
         attroff(A_BOLD);
@@ -258,7 +259,7 @@ int main(void) {
         if (editing || flt[0])
             mvprintw(LINES - 3, 0, "filter: %s%s", flt, editing ? "_" : "");
         mvprintw(LINES - 2, 0, "%.*s", COLS, status);
-        mvprintw(LINES - 1, 0, "[←/→] refresh time  [k] kill  [s] sort cpu  [m] sort mem  [/] filter  [q] quit");
+        mvprintw(LINES - 1, 0, "[←/→] refresh time  [space] pause  [k] kill  [s] sort cpu  [m] sort mem  [/] filter  [q] quit");
         refresh();
 
         int ch = getch();
@@ -280,7 +281,8 @@ int main(void) {
         if (ch == 'm') sort_mem = 1;
         if (ch == '/') editing = 1;
         if (ch == 27) flt[0] = 0;
-        if ((ch == 'k' || ch == KEY_BACKSPACE || ch == 127 || ch == 8) && n) {
+        if (ch == ' ') paused = !paused;
+        if (ch == 'k' && n) {
             if (kill(sel_pid, SIGTERM) == 0)
                 snprintf(status, sizeof status, "killed %d (%s)", sel_pid, view[sel].name);
             else
