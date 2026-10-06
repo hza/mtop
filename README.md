@@ -23,10 +23,10 @@ Single C file, uses only system ncurses and native macOS APIs (`libproc`, `sysct
 
 ## Features
 
-- Top 16 processes by CPU or memory
+- As many top processes as fit the terminal (bottom 16 rows are reserved for details), by CPU or memory
 - System CPU %, memory used/total, load average
 - Command, arguments and working directory of the selected process, word-wrapped
-- Selected process stays on screen (pinned to the last row) even if it drops out of the top 16
+- Selected process stays on screen (pinned to the last row) even if it drops off the list
 - Name filter, adjustable refresh interval (0.25s – 10s)
 
 ## Build & install

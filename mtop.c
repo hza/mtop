@@ -1,4 +1,4 @@
-// mtop - minimal top: top 16 processes, arrows move, k kills, space pauses.
+// mtop - minimal top: top processes (fits terminal height), arrows move, k kills, space pauses.
 #include <ctype.h>
 #include <errno.h>
 #include <libproc.h>
@@ -15,7 +15,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#define TOPN 16
+#define HEAD_ROWS 4    // header, blank, column titles, separator
+#define DETAIL_ROWS 16 // separator, CMD/ARGS/CWD, filter, status, help
 #define MAXP 8192
 
 typedef struct {
@@ -216,7 +217,9 @@ int main(void) {
             last = now_ns();
         }
         build_view();
-        int n = nview < TOPN ? nview : TOPN;
+        int topn = LINES - HEAD_ROWS - DETAIL_ROWS;
+        if (topn < 1) topn = 1;
+        int n = nview < topn ? nview : topn;
         for (int i = 0; i < nview; i++)
             if (view[i].pid == sel_pid) {
                 // keep the selected process visible: pin it to the last row
@@ -244,7 +247,7 @@ int main(void) {
                      view[i].name);
             if (i == sel) attroff(A_REVERSE);
         }
-        int y = 4 + TOPN;
+        int y = HEAD_ROWS + topn;
         hline_at(y);
         if (n) {
             cmdline(sel_pid, cmd, args, sizeof cmd);
