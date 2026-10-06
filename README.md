@@ -18,7 +18,7 @@ Single C file, uses only system ncurses and native macOS APIs (`libproc`, `sysct
   ARGS -vmargs -Xmx2g
   CWD  /Users/me
 
-[←/→] refresh time  [space] pause  [k] kill  [s] sort cpu  [m] sort mem  [/] filter  [q] quit
+[←/→] refresh time  [space] pause  [k] kill  [c] sort cpu  [m] sort mem  [/] filter  [q] quit
 ```
 
 ## Features
@@ -47,7 +47,7 @@ Requires Xcode Command Line Tools (`xcode-select --install`).
 | `←` / `→`         | Faster / slower refresh                  |
 | `Space`           | Pause / resume updates                   |
 | `k`               | Kill selected process (`SIGTERM`)        |
-| `s`               | Sort by CPU                              |
+| `c`               | Sort by CPU                              |
 | `m`               | Sort by memory                           |
 | `/`               | Filter by name (Enter to keep, Esc to clear) |
 | `q`               | Quit                                     |

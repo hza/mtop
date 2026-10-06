@@ -270,7 +270,7 @@ int main(void) {
         if (editing || flt[0])
             mvprintw(LINES - 3, 0, "filter: %s%s", flt, editing ? "_" : "");
         mvprintw(LINES - 2, 0, "%.*s", COLS, status);
-        mvprintw(LINES - 1, 0, "[←/→] refresh time  [space] pause  [k] kill  [s] sort cpu  [m] sort mem  [/] filter  [q] quit");
+        mvprintw(LINES - 1, 0, "[←/→] refresh time  [space] pause  [k] kill  [c] sort cpu  [m] sort mem  [/] filter  [q] quit");
         refresh();
 
         int ch = getch();
@@ -290,7 +290,7 @@ int main(void) {
         if (ch == KEY_DOWN && sel < n - 1) sel_pid = view[++sel].pid;
         if (ch == KEY_LEFT && ival > 0) ival--;
         if (ch == KEY_RIGHT && ival < NIVAL - 1) ival++;
-        if (ch == 's') sort_mem = 0;
+        if (ch == 'c') sort_mem = 0;
         if (ch == 'm') sort_mem = 1;
         if (ch == '/') editing = 1;
         if (ch == 27) flt[0] = 0;
