@@ -272,8 +272,10 @@ int main(void) {
             if (ch == '\n' || ch == KEY_ENTER) editing = 0;
             else if (ch == 27) { flt[0] = 0; editing = 0; }
             else if ((ch == KEY_BACKSPACE || ch == 127 || ch == 8) && l) flt[l - 1] = 0;
-            else if (isprint(ch) && l < sizeof flt - 1) { flt[l] = ch; flt[l + 1] = 0; }
-            continue;
+            else if (ch < 128 && isprint(ch)) {
+                if (l < sizeof flt - 1) { flt[l] = ch; flt[l + 1] = 0; }
+            }
+            if (ch != KEY_UP && ch != KEY_DOWN && ch != KEY_LEFT && ch != KEY_RIGHT) continue;
         }
         if (ch == 'q' || ch == 'Q') break;
         if (ch == KEY_UP && sel > 0) sel_pid = view[--sel].pid;
