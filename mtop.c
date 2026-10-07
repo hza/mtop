@@ -25,7 +25,7 @@ typedef struct {
     uint64_t cpu;   // cumulative cpu ns
     uint64_t rss;
     double pct;
-    char name[64];
+    char name[128];
 } proc_t;
 
 static proc_t cur[MAXP], prev[MAXP], view[MAXP];
@@ -110,7 +110,12 @@ static void sample(void) {
         p->cpu = (ti.pti_total_user + ti.pti_total_system) * tb.numer / tb.denom;
         p->rss = ti.pti_resident_size;
         p->pct = 0;
-        if (proc_name(p->pid, p->name, sizeof p->name) <= 0)
+        // proc_name truncates to 32 chars; prefer the full executable basename
+        char path[PROC_PIDPATHINFO_MAXSIZE];
+        if (proc_pidpath(p->pid, path, sizeof path) > 0) {
+            const char *b = strrchr(path, '/');
+            snprintf(p->name, sizeof p->name, "%s", b ? b + 1 : path);
+        } else if (proc_name(p->pid, p->name, sizeof p->name) <= 0)
             snprintf(p->name, sizeof p->name, "?");
         proc_t key = {.pid = p->pid};
         proc_t *q = bsearch(&key, prev, nprev, sizeof(proc_t), by_pid);
