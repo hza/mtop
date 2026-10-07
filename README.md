@@ -44,6 +44,7 @@ Requires Xcode Command Line Tools (`xcode-select --install`).
 | Key               | Action                                   |
 |-------------------|------------------------------------------|
 | `↑` / `↓`         | Move selection                           |
+| `fn`+`↑` / `↓`    | Page up / down (list or details pane)    |
 | `←` / `→`         | Faster / slower refresh                  |
 | `Space`           | Pause / resume updates                   |
 | `Tab`             | Focus details pane; `↑`/`↓` then scroll it |

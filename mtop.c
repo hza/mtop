@@ -301,12 +301,19 @@ int main(void) {
             else if (ch < 128 && isprint(ch)) {
                 if (l < sizeof flt - 1) { flt[l] = ch; flt[l + 1] = 0; }
             }
-            if (ch != KEY_UP && ch != KEY_DOWN && ch != KEY_LEFT && ch != KEY_RIGHT) continue;
+            if (ch != KEY_UP && ch != KEY_DOWN && ch != KEY_PPAGE && ch != KEY_NPAGE &&
+                ch != KEY_LEFT && ch != KEY_RIGHT) continue;
         }
         if (ch == 'q' || ch == 'Q') break;
         if (ch == '\t') dfocus = !dfocus;
         if (dfocus && ch == KEY_UP) { if (dscroll > 0) dscroll--; continue; }
         if (dfocus && ch == KEY_DOWN) { dscroll++; continue; }  // clamped on redraw
+        int dpage = LINES - 3 - dtop > 1 ? LINES - 3 - dtop : 1;
+        if (dfocus && ch == KEY_PPAGE) { dscroll = dscroll > dpage ? dscroll - dpage : 0; continue; }
+        if (dfocus && ch == KEY_NPAGE) { dscroll += dpage; continue; }
+        // fn+↑/↓: jump a page (the whole list fits on screen, so to first/last row)
+        if (ch == KEY_PPAGE && n) { sel = 0; sel_pid = view[0].pid; follow = 1; dscroll = 0; }
+        if (ch == KEY_NPAGE && n) { sel = n - 1; sel_pid = view[sel].pid; follow = 1; dscroll = 0; }
         if (ch == KEY_UP && sel > 0) { sel_pid = view[--sel].pid; follow = 1; dscroll = 0; }
         if (ch == KEY_DOWN && sel < n - 1) { sel_pid = view[++sel].pid; follow = 1; dscroll = 0; }
         if (ch == KEY_LEFT && ival > 0) ival--;
