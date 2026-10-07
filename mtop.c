@@ -17,7 +17,7 @@
 
 #define HEAD_ROWS 4    // header, blank, column titles, separator
 #define DETAIL_ROWS 16 // separator, CMD/ARGS/CWD, filter, status, help
-#define DETAIL_MARGIN 7 // right margin of the details pane; ▲/▼ sit in its last column
+#define DETAIL_MARGIN 7 // right margin of the details pane; scrollbar sits in its last column
 #define MAXP 8192
 
 typedef struct {
@@ -168,7 +168,7 @@ static void cwd_of(pid_t pid, char *out, size_t outsz) {
 }
 
 // Details pane: first screen row and how many wrapped rows are scrolled off the top.
-static int dtop, dscroll;
+static int dtop, dscroll, dmax;  // dmax: largest dscroll, from the last redraw
 
 // Prints label + value word-wrapped under a 7-col indent at virtual row y of the
 // details pane (shifted up by dscroll, clipped to the pane); returns rows used.
@@ -280,11 +280,21 @@ int main(void) {
         int drows = field(0, "CMD", cmd);
         drows += field(drows, "ARGS", args);
         drows += field(drows, "CWD", cwd);
-        int dmax = drows - (LINES - 3 - dtop);  // rows that don't fit
+        dmax = drows - (LINES - 3 - dtop);  // rows that don't fit
         if (dmax < 0) dmax = 0;
         if (dscroll > dmax) dscroll = dmax;
-        if (dscroll && dmax) mvprintw(dtop, COLS - 1, "▲");
-        if (dscroll < dmax) mvprintw(LINES - 4, COLS - 1, "▼");
+        if (dmax) {  // scrollbar in the last column: ▲, track │ with a █ thumb, ▼
+            int vis = LINES - 3 - dtop, trk = vis - 2;  // rows between the arrows
+            if (trk > 0) {
+                int th = trk * vis / drows;
+                if (th < 1) th = 1;
+                int ty = dscroll * (trk - th) / dmax;
+                for (int i = 0; i < trk; i++)
+                    mvprintw(dtop + 1 + i, COLS - 1, i >= ty && i < ty + th ? "█" : "│");
+            }
+            mvprintw(dtop, COLS - 1, "▲");
+            mvprintw(LINES - 4, COLS - 1, "▼");
+        }
         if (editing || flt[0])
             mvprintw(LINES - 3, 0, "filter: %s%s", flt, editing ? "_" : "");
         mvprintw(LINES - 2, 0, "%.*s", COLS, status);
@@ -307,10 +317,10 @@ int main(void) {
         if (ch == 'q' || ch == 'Q') break;
         if (ch == '\t') dfocus = !dfocus;
         if (dfocus && ch == KEY_UP) { if (dscroll > 0) dscroll--; continue; }
-        if (dfocus && ch == KEY_DOWN) { dscroll++; continue; }  // clamped on redraw
+        if (dfocus && ch == KEY_DOWN) { if (dscroll < dmax) dscroll++; continue; }
         int dpage = LINES - 3 - dtop > 1 ? LINES - 3 - dtop : 1;
         if (dfocus && ch == KEY_PPAGE) { dscroll = dscroll > dpage ? dscroll - dpage : 0; continue; }
-        if (dfocus && ch == KEY_NPAGE) { dscroll += dpage; continue; }
+        if (dfocus && ch == KEY_NPAGE) { dscroll = dscroll + dpage < dmax ? dscroll + dpage : dmax; continue; }
         // fn+↑/↓: jump a page (the whole list fits on screen, so to first/last row)
         if (ch == KEY_PPAGE && n) { sel = 0; sel_pid = view[0].pid; follow = 1; dscroll = 0; }
         if (ch == KEY_NPAGE && n) { sel = n - 1; sel_pid = view[sel].pid; follow = 1; dscroll = 0; }
