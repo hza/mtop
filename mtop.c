@@ -17,6 +17,7 @@
 
 #define HEAD_ROWS 4    // header, blank, column titles, separator
 #define DETAIL_ROWS 16 // separator, CMD/ARGS/CWD, filter, status, help
+#define DETAIL_MARGIN 7 // right margin of the details pane; ▲/▼ sit in its last column
 #define MAXP 8192
 
 typedef struct {
@@ -172,7 +173,7 @@ static int dtop, dscroll;
 // Prints label + value word-wrapped under a 7-col indent at virtual row y of the
 // details pane (shifted up by dscroll, clipped to the pane); returns rows used.
 static int field(int y, const char *label, const char *val) {
-    int w = COLS > 9 ? COLS - 8 : 1, rows = 0;  // last column is for ▲/▼
+    int w = COLS > 8 + DETAIL_MARGIN ? COLS - 7 - DETAIL_MARGIN : 1, rows = 0;
     y += dtop - dscroll;
     if (y >= dtop && y < LINES - 3) {
         attron(A_BOLD);
