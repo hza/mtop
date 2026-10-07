@@ -166,13 +166,19 @@ static void cwd_of(pid_t pid, char *out, size_t outsz) {
         snprintf(out, outsz, "(unavailable)");
 }
 
-// Prints label + value word-wrapped under a 7-col indent; returns rows used.
+// Details pane: first screen row and how many wrapped rows are scrolled off the top.
+static int dtop, dscroll;
+
+// Prints label + value word-wrapped under a 7-col indent at virtual row y of the
+// details pane (shifted up by dscroll, clipped to the pane); returns rows used.
 static int field(int y, const char *label, const char *val) {
-    int w = COLS > 8 ? COLS - 7 : 1, rows = 0;
-    if (y >= LINES - 3) return 1;
-    attron(A_BOLD);
-    mvprintw(y, 2, "%-5s", label);
-    attroff(A_BOLD);
+    int w = COLS > 9 ? COLS - 8 : 1, rows = 0;  // last column is for ▲/▼
+    y += dtop - dscroll;
+    if (y >= dtop && y < LINES - 3) {
+        attron(A_BOLD);
+        mvprintw(y, 2, "%-5s", label);
+        attroff(A_BOLD);
+    }
     do {
         int len = strlen(val);
         int take = len;
@@ -181,7 +187,7 @@ static int field(int y, const char *label, const char *val) {
             for (int i = w; i > w / 2; i--)
                 if (val[i] == ' ') { take = i; break; }
         }
-        if (y + rows < LINES - 3) mvprintw(y + rows, 7, "%.*s", take, val);
+        if (y + rows >= dtop && y + rows < LINES - 3) mvprintw(y + rows, 7, "%.*s", take, val);
         val += take;
         while (*val == ' ') val++;
         rows++;
@@ -213,10 +219,15 @@ int main(void) {
     timeout(250);
 
     pid_t sel_pid = -1;
-    int sel = 0, editing = 0;
+    int sel = 0, editing = 0, follow = 0, dfocus = 0;  // dfocus: ↑/↓ scroll details  // follow: track sel_pid only after user navigates
     char status[256] = "";
-    char cmd[4096], args[4096], cwd[PROC_PIDPATHINFO_MAXSIZE];
+    static char cmd[1 << 16], args[1 << 16];
+    char cwd[PROC_PIDPATHINFO_MAXSIZE];
     uint64_t last = 0;
+
+    // prime CPU deltas so the first screen isn't all 0% (sorted by pid)
+    sample();
+    usleep(100000);
 
     for (;;) {
         if (!last || (!paused && now_ns() - last >= intervals[ival] * 1000000ULL)) {
@@ -227,7 +238,7 @@ int main(void) {
         int topn = LINES - HEAD_ROWS - DETAIL_ROWS;
         if (topn < 1) topn = 1;
         int n = nview < topn ? nview : topn;
-        for (int i = 0; i < nview; i++)
+        for (int i = 0; follow && i < nview; i++)
             if (view[i].pid == sel_pid) {
                 // keep the selected process visible: pin it to the last row
                 if (i >= n) { view[n - 1] = view[i]; i = n - 1; }
@@ -257,20 +268,26 @@ int main(void) {
         }
         int y = HEAD_ROWS + topn;
         hline_at(y);
+        if (dfocus) mvprintw(y, 2, " details ↑/↓ scroll, TAB back ");
         if (n) {
             cmdline(sel_pid, cmd, args, sizeof cmd);
             cwd_of(sel_pid, cwd, sizeof cwd);
         } else {
             cmd[0] = args[0] = cwd[0] = 0;
         }
-        y++;
-        y += field(y, "CMD", cmd);
-        y += field(y, "ARGS", args);
-        y += field(y, "CWD", cwd);
+        dtop = y + 1;
+        int drows = field(0, "CMD", cmd);
+        drows += field(drows, "ARGS", args);
+        drows += field(drows, "CWD", cwd);
+        int dmax = drows - (LINES - 3 - dtop);  // rows that don't fit
+        if (dmax < 0) dmax = 0;
+        if (dscroll > dmax) dscroll = dmax;
+        if (dscroll && dmax) mvprintw(dtop, COLS - 1, "▲");
+        if (dscroll < dmax) mvprintw(LINES - 4, COLS - 1, "▼");
         if (editing || flt[0])
             mvprintw(LINES - 3, 0, "filter: %s%s", flt, editing ? "_" : "");
         mvprintw(LINES - 2, 0, "%.*s", COLS, status);
-        mvprintw(LINES - 1, 0, "[←/→] refresh time  [space] pause  [k] kill  [c] sort cpu  [m] sort mem  [/] filter  [q] quit");
+        mvprintw(LINES - 1, 0, "[←/→] refresh time  [space] pause  [tab] details  [k] kill  [c] sort cpu  [m] sort mem  [/] filter  [q] quit");
         refresh();
 
         int ch = getch();
@@ -286,8 +303,11 @@ int main(void) {
             if (ch != KEY_UP && ch != KEY_DOWN && ch != KEY_LEFT && ch != KEY_RIGHT) continue;
         }
         if (ch == 'q' || ch == 'Q') break;
-        if (ch == KEY_UP && sel > 0) sel_pid = view[--sel].pid;
-        if (ch == KEY_DOWN && sel < n - 1) sel_pid = view[++sel].pid;
+        if (ch == '\t') dfocus = !dfocus;
+        if (dfocus && ch == KEY_UP) { if (dscroll > 0) dscroll--; continue; }
+        if (dfocus && ch == KEY_DOWN) { dscroll++; continue; }  // clamped on redraw
+        if (ch == KEY_UP && sel > 0) { sel_pid = view[--sel].pid; follow = 1; dscroll = 0; }
+        if (ch == KEY_DOWN && sel < n - 1) { sel_pid = view[++sel].pid; follow = 1; dscroll = 0; }
         if (ch == KEY_LEFT && ival > 0) ival--;
         if (ch == KEY_RIGHT && ival < NIVAL - 1) ival++;
         if (ch == 'c') sort_mem = 0;
